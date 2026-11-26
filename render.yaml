@@ -1,0 +1,15 @@
+# One-click deploy on Render. Free plan has no persistent disk, so the
+# database resets on every deploy — fine for testing webhooks, not for customers.
+services:
+  - type: web
+    name: wedge
+    runtime: node
+    plan: free
+    buildCommand: echo "no build step"
+    startCommand: node server/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: WHATSAPP_VERIFY_TOKEN
+        generateValue: true

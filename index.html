@@ -1,0 +1,898 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wedge — set it once, get told the moment it changes</title>
+<style>
+  :root{
+    --paper:#F6F2E9;
+    --paper2:#FCFAF5;
+    --ink:#17160F;
+    --ink2:#4B473C;
+    --mute:#8C8677;
+    --line:#E4DECF;
+    --signal:#DE3B1C;
+    --signal-2:#F2542D;
+    --signal-soft:#FBE8E2;
+    --sage:#2E6B4E;
+    --sage-soft:#E7F1EA;
+    --amber:#B87A00;
+    --shadow:0 18px 50px -22px rgba(23,22,15,.35);
+    --shadow-sm:0 8px 24px -14px rgba(23,22,15,.4);
+    --serif:"Instrument Serif","Playfair Display",Georgia,"Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  ::selection{background:var(--signal);color:#fff}
+  a{color:inherit}
+  .wrap{max-width:1160px;margin:0 auto;padding:0 28px}
+  .serif{font-family:var(--serif);font-weight:400;letter-spacing:-.015em}
+  em{font-style:italic}
+
+  /* ---------- nav ---------- */
+  header{position:sticky;top:0;z-index:60;background:rgba(246,242,233,.82);backdrop-filter:blur(14px);border-bottom:1px solid transparent;transition:border-color .3s}
+  header.scrolled{border-bottom-color:var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 0}
+  .logo{display:flex;align-items:center;gap:9px;font-family:var(--serif);font-size:21px;text-decoration:none;letter-spacing:-.01em}
+  .logomark{width:15px;height:15px;fill:var(--signal);flex:none}
+  .dot{
+    width:11px;height:11px;border-radius:50%;background:var(--signal);position:relative;flex:none;
+  }
+  .dot::after{
+    content:"";position:absolute;inset:-6px;border-radius:50%;border:1.5px solid var(--signal);
+    opacity:.5;animation:pulse 2.4s ease-out infinite;
+  }
+  @keyframes pulse{0%{transform:scale(.6);opacity:.65}70%{transform:scale(1.7);opacity:0}100%{opacity:0}}
+  .navlinks{display:flex;gap:26px;font-size:14px;color:var(--ink2)}
+  .navlinks a{text-decoration:none;position:relative;padding-bottom:2px}
+  .navlinks a::after{content:"";position:absolute;left:0;bottom:0;width:0;height:1px;background:var(--ink);transition:width .3s}
+  .navlinks a:hover::after{width:100%}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;border-radius:999px;padding:11px 20px;
+    font-size:14px;font-weight:500;text-decoration:none;border:1px solid var(--ink);
+    background:var(--ink);color:var(--paper);transition:transform .25s,background .25s,box-shadow .25s;
+  }
+  .pill:hover{transform:translateY(-2px);box-shadow:0 10px 22px -12px rgba(23,22,15,.7)}
+  .pill.signal{background:var(--signal);border-color:var(--signal)}
+  .pill.signal:hover{background:var(--signal-2)}
+  .pill.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+  .pill.ghost:hover{border-color:var(--ink)}
+  .arrow{transition:transform .25s}
+  .pill:hover .arrow{transform:translate(2px,-2px)}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;padding:64px 0 0;overflow:hidden}
+  .glow{
+    position:absolute;top:-140px;left:50%;transform:translateX(-50%);width:1000px;height:640px;
+    background:radial-gradient(closest-side,rgba(222,59,28,.10),rgba(222,59,28,.03) 55%,transparent 75%);
+    pointer-events:none;z-index:0;
+  }
+  .hero-inner{position:relative;z-index:2;text-align:center}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:9px;font-size:12px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--mute);border:1px solid var(--line);border-radius:999px;padding:7px 15px;background:var(--paper2);
+  }
+  h1{
+    font-family:var(--serif);font-weight:400;font-size:clamp(44px,7.4vw,92px);line-height:.98;
+    letter-spacing:-.025em;margin:26px 0 0;text-wrap:balance;
+  }
+  h1 .it{display:block;font-style:italic;color:var(--signal)}
+  .sub{max-width:560px;margin:24px auto 0;color:var(--ink2);font-size:17px}
+
+  /* ---------- builder ---------- */
+  .builder{
+    max-width:660px;margin:34px auto 0;background:var(--paper2);border:1px solid var(--line);
+    border-radius:20px;padding:14px;box-shadow:var(--shadow);position:relative;
+  }
+  .builder-row{display:flex;gap:10px;align-items:center}
+  .builder input{
+    flex:1;border:none;background:transparent;font:inherit;font-size:16px;padding:12px 14px;color:var(--ink);outline:none;min-width:0;
+  }
+  .builder input::placeholder{color:#A9A392}
+  .builder button{flex:none}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;padding:6px 8px 4px}
+  .chip{
+    font-size:12.5px;border:1px solid var(--line);background:var(--paper);color:var(--ink2);
+    border-radius:999px;padding:5px 12px;cursor:pointer;transition:.2s;
+  }
+  .chip:hover{border-color:var(--signal);color:var(--signal);background:#fff}
+
+  .preview{
+    margin:14px auto 0;max-width:660px;border:1px dashed var(--line);border-radius:16px;
+    padding:16px 18px;background:rgba(252,250,245,.7);text-align:left;transition:.3s;
+    opacity:.55;
+  }
+  .preview.live{opacity:1;border-style:solid;border-color:#D8CFBB;background:var(--paper2);box-shadow:var(--shadow-sm)}
+  .pv-head{display:flex;align-items:center;gap:9px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+  .pv-row{display:flex;gap:12px;padding:5px 0;font-size:14px;border-top:1px solid rgba(228,222,207,.7)}
+  .pv-row:first-of-type{border-top:none}
+  .pv-k{width:96px;flex:none;color:var(--mute);font-size:12.5px;padding-top:2px}
+  .pv-v{color:var(--ink);font-weight:500}
+  .pv-v .tag{display:inline-block;font-size:11px;background:var(--sage-soft);color:var(--sage);border-radius:4px;padding:1px 7px;margin-left:6px;font-weight:500}
+
+  /* ---------- fanned cards ---------- */
+  .fan{position:relative;height:340px;margin-top:46px;perspective:1400px;z-index:1}
+  .fcard{
+    position:absolute;top:24px;left:50%;width:216px;padding:16px;border-radius:16px;background:#fff;
+    border:1px solid var(--line);box-shadow:var(--shadow);transform-origin:50% 100%;
+    transition:transform .5s cubic-bezier(.2,.8,.2,1),box-shadow .4s;will-change:transform;
+  }
+  .fcard .fl{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--mute)}
+  .fcard .ft{font-family:var(--serif);font-size:18px;line-height:1.2;margin:6px 0 4px}
+  .fcard .fd{font-size:12px;color:var(--ink2)}
+  .fcard .fbar{margin-top:12px;height:4px;border-radius:99px;background:#F0EBE0;overflow:hidden}
+  .fcard .fbar i{display:block;height:100%;width:38%;background:var(--signal);border-radius:99px}
+  .fcard:hover{box-shadow:0 26px 60px -26px rgba(23,22,15,.5);z-index:9}
+  .f1{transform:translateX(-50%) translateX(-330px) translateY(46px) rotate(-9deg) scale(.9)}
+  .f2{transform:translateX(-50%) translateX(-168px) translateY(16px) rotate(-4.5deg) scale(.96)}
+  .f3{transform:translateX(-50%) translateY(0) rotate(0deg) scale(1.04);z-index:5}
+  .f4{transform:translateX(-50%) translateX(168px) translateY(16px) rotate(4.5deg) scale(.96)}
+  .f5{transform:translateX(-50%) translateX(330px) translateY(46px) rotate(9deg) scale(.9)}
+  .fcard.hov{transform:translateX(-50%) translateY(-14px) scale(1.07) rotate(0deg) !important;z-index:9}
+
+  /* ---------- marquee ---------- */
+  .marquee{border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0;margin-top:26px;overflow:hidden;background:var(--paper2)}
+  .track{display:flex;gap:44px;width:max-content;animation:slide 34s linear infinite}
+  .marquee:hover .track{animation-play-state:paused}
+  @keyframes slide{to{transform:translateX(-50%)}}
+  .mi{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--ink2);white-space:nowrap}
+  .mi b{font-weight:600;color:var(--ink)}
+  .mi .d{width:5px;height:5px;border-radius:50%;background:var(--signal);opacity:.7}
+
+  /* ---------- sections ---------- */
+  section{position:relative}
+  .sec{padding:96px 0}
+  .sec-head{max-width:720px;margin-bottom:44px}
+  .kicker{font-size:11.5px;letter-spacing:.17em;text-transform:uppercase;color:var(--mute);margin:0 0 14px}
+  h2{font-family:var(--serif);font-weight:400;font-size:clamp(32px,4.4vw,52px);line-height:1.04;letter-spacing:-.02em;margin:0;text-wrap:balance}
+  h2 em{color:var(--signal)}
+  .sec-head p{color:var(--ink2);margin:16px 0 0;font-size:16.5px;max-width:600px}
+
+  /* steps */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .step{background:var(--paper2);border:1px solid var(--line);border-radius:18px;padding:26px;position:relative;overflow:hidden;transition:.4s}
+  .step:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .step .n{font-family:var(--serif);font-size:13px;letter-spacing:.1em;color:var(--signal)}
+  .step h3{font-family:var(--serif);font-weight:400;font-size:23px;margin:12px 0 8px;line-height:1.2}
+  .step p{margin:0;color:var(--ink2);font-size:14.5px}
+
+  /* shelf */
+  .shelf{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .alarm{
+    background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;cursor:pointer;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s,border-color .35s;position:relative;overflow:hidden;
+  }
+  .alarm:hover{transform:translateY(-6px);box-shadow:var(--shadow);border-color:#D5CBB6}
+  .alarm::before{
+    content:"";position:absolute;inset:0;background:radial-gradient(120px 80px at var(--mx,50%) var(--my,0%),rgba(222,59,28,.10),transparent 70%);
+    opacity:0;transition:opacity .3s;pointer-events:none;
+  }
+  .alarm:hover::before{opacity:1}
+  .alarm .ico{width:34px;height:34px;border-radius:10px;background:var(--signal-soft);display:grid;place-items:center;margin-bottom:14px}
+  .alarm .ico svg{width:17px;height:17px;stroke:var(--signal);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+  .alarm h4{font-size:15px;margin:0 0 5px;font-weight:600}
+  .alarm p{margin:0;font-size:13px;color:var(--mute);line-height:1.45}
+
+  /* demo */
+  .demo{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
+  .panel{background:var(--paper2);border:1px solid var(--line);border-radius:20px;padding:24px}
+  .panel h3{font-family:var(--serif);font-weight:400;font-size:22px;margin:0 0 4px}
+  .panel .ph{font-size:13px;color:var(--mute);margin:0 0 18px}
+  .list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+  .row{
+    display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);
+    border-radius:12px;padding:12px 14px;animation:drop .45s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes drop{from{opacity:0;transform:translateY(-8px) scale(.98)}to{opacity:1;transform:none}}
+  .live-dot{width:8px;height:8px;border-radius:50%;background:var(--sage);flex:none;position:relative}
+  .live-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--sage);opacity:.5;animation:pulse 2.2s infinite}
+  .row .rt{font-size:13.5px;font-weight:500;line-height:1.3}
+  .row .rm{font-size:11.5px;color:var(--mute);margin-top:2px}
+  .connbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:-6px 0 14px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:#FCFBF6;font-size:12.5px;color:var(--ink2)}
+  .cstate{display:flex;align-items:center;gap:7px}
+  .cstate i{width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;flex:none}
+  .cstate i.live{background:var(--sage)}
+  .conninput{display:flex;gap:6px;align-items:center;flex:1;min-width:200px}
+  .conninput input{flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font:inherit;font-size:12.5px;background:#fff;outline:none;min-width:0}
+  .conninput button{border:1px solid var(--ink);background:var(--ink);color:var(--paper);border-radius:8px;padding:6px 11px;font-size:12px;cursor:pointer}
+  .errbox{border:1px solid #E8C4BC;background:#FDF2EF;color:#9C2B15;border-radius:10px;padding:10px 12px;font-size:13px;margin-bottom:10px}
+  .empty{color:var(--mute);font-size:13.5px;text-align:center;padding:26px 10px;border:1px dashed var(--line);border-radius:12px}
+
+  /* phone */
+  .phone{
+    background:var(--ink);border-radius:26px;padding:14px;max-width:330px;margin:0 auto;
+    box-shadow:0 30px 70px -30px rgba(23,22,15,.6);
+  }
+  .screen{background:#ECE5DD;border-radius:16px;padding:14px 12px;min-height:300px;display:flex;flex-direction:column;gap:8px}
+  .wa-top{display:flex;align-items:center;gap:8px;background:#075E54;color:#fff;border-radius:12px 12px 4px 4px;padding:9px 11px;font-size:12.5px;margin:-14px -12px 6px}
+  .wa-top .av{width:22px;height:22px;border-radius:50%;background:#25D366;display:grid;place-items:center;font-size:10px;font-weight:700;color:#075E54}
+  .bubble{
+    background:#fff;border-radius:10px 10px 10px 2px;padding:10px 12px;font-size:13px;line-height:1.45;
+    box-shadow:0 1px 1px rgba(0,0,0,.08);max-width:88%;animation:pop .4s cubic-bezier(.2,.9,.3,1.3) both;
+  }
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.94)}to{opacity:1;transform:none}}
+  .bubble .bt{font-weight:600;font-size:12.5px;margin-bottom:3px}
+  .bubble .bm{color:#5c5c5c;font-size:12.5px}
+  .bubble .time{display:block;text-align:right;font-size:10px;color:#9a9a9a;margin-top:4px}
+  .wa-actions{display:flex;gap:8px;margin-top:auto;padding-top:10px}
+  .wa-btn{flex:1;text-align:center;background:#fff;border-radius:8px;padding:8px;font-size:12px;color:#075E54;font-weight:600}
+
+  /* pricing */
+  .prices{display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:stretch}
+  .price{border:1px solid var(--line);border-radius:20px;padding:30px;background:var(--paper2);display:flex;flex-direction:column;transition:.35s}
+  .price:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+  .price.hot{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+  .price .pl{font-size:11.5px;letter-spacing:.15em;text-transform:uppercase;opacity:.6}
+  .price .amt{font-family:var(--serif);font-size:52px;line-height:1;margin:14px 0 2px;letter-spacing:-.02em}
+  .price .amt small{font-size:16px;opacity:.55;font-family:var(--sans);letter-spacing:0}
+  .price .pn{font-size:13px;opacity:.65;margin-bottom:20px}
+  .price ul{list-style:none;padding:0;margin:0 0 24px;font-size:14px}
+  .price li{padding:7px 0;border-top:1px solid rgba(140,134,119,.22);display:flex;gap:9px}
+  .price.hot li{border-color:rgba(246,242,233,.16)}
+  .price li svg{flex:none;margin-top:4px}
+  .price .pill{margin-top:auto;justify-content:center}
+  .price.hot .pill{background:var(--signal);border-color:var(--signal);color:#fff}
+
+  /* footer */
+  footer{border-top:1px solid var(--line);padding:40px 0 60px;color:var(--mute);font-size:13px}
+  .foot{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+
+  /* reveal */
+  .rv{opacity:0;transform:translateY(22px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1)}
+  .rv.in{opacity:1;transform:none}
+
+  @media (max-width:940px){
+    .steps{grid-template-columns:1fr}
+    .shelf{grid-template-columns:1fr 1fr}
+    .demo{grid-template-columns:1fr}
+    .prices{grid-template-columns:1fr}
+    .navlinks{display:none}
+    .fan{height:300px}
+    .f1,.f5{display:none}
+    .f2{transform:translateX(-50%) translateX(-108px) translateY(18px) rotate(-5deg) scale(.92)}
+    .f4{transform:translateX(-50%) translateX(108px) translateY(18px) rotate(5deg) scale(.92)}
+  }
+  @media (max-width:560px){
+    .wrap{padding:0 18px}
+    .sec{padding:64px 0}
+    .shelf{grid-template-columns:1fr}
+    .fcard{width:170px;padding:13px}
+    .fcard .ft{font-size:15px}
+    .builder-row{flex-direction:column;align-items:stretch}
+    .builder button{width:100%;justify-content:center}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation:none !important;transition:none !important}
+    .rv{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+
+<header id="hdr">
+  <div class="wrap nav">
+    <a class="logo" href="#top"><svg class="logomark" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4 L21 12 L3 20 Z"/></svg> Wedge</a>
+    <nav class="navlinks">
+      <a href="#how">How it works</a>
+      <a href="#shelf">What you can watch</a>
+      <a href="#demo">Try it</a>
+      <a href="#pricing">Pricing</a>
+    </nav>
+    <a class="pill signal" href="#demo">Set an alarm <span class="arrow">↗</span></a>
+  </div>
+</header>
+
+<section class="hero" id="top">
+  <div class="glow"></div>
+  <div class="wrap hero-inner">
+    <span class="eyebrow"><span class="dot" style="width:6px;height:6px"></span> Watches the web while you sleep</span>
+    <h1 class="serif">Set it once.<br><span class="it">Get told the moment</span> it changes.</h1>
+    <p class="sub">A price drop, a job opening, an exam date, a flat's approval. You tell us what you're waiting for — we check the page every few hours and send you one line when it actually happens.</p>
+
+    <form class="builder" id="builder" autocomplete="off">
+      <div class="chips" id="chips">
+        <button type="button" class="chip">tell me when this laptop drops under ₹55,000</button>
+        <button type="button" class="chip">new backend jobs at Razorpay in Bengaluru</button>
+        <button type="button" class="chip">when IIT-B announces fest dates</button>
+      </div>
+      <div class="builder-row">
+        <input id="ask" placeholder="Type it the way you'd say it…" aria-label="Describe the alarm">
+        <button class="pill signal" type="submit">Set alarm</button>
+      </div>
+    </form>
+
+    <div class="preview" id="preview">
+      <div class="pv-head"><span class="dot" style="width:6px;height:6px"></span> <span id="pvstate">Waiting for you to say something</span></div>
+      <div class="pv-row"><div class="pv-k">Watching</div><div class="pv-v" id="pv-what">—</div></div>
+      <div class="pv-row"><div class="pv-k">Checking</div><div class="pv-v" id="pv-freq">—</div></div>
+      <div class="pv-row"><div class="pv-k">Rings when</div><div class="pv-v" id="pv-when">—</div></div>
+      <div class="pv-row"><div class="pv-k">Where</div><div class="pv-v" id="pv-where">—</div></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="fan" id="fan">
+      <div class="fcard f1"><div class="fl">Price</div><div class="ft">Sony WH-1000XM5</div><div class="fd">Below ₹24,000</div><div class="fbar"><i></i></div></div>
+      <div class="fcard f2"><div class="fl">Job</div><div class="ft">Backend, Razorpay</div><div class="fd">Bengaluru · 3+ yrs</div><div class="fbar"><i style="width:62%"></i></div></div>
+      <div class="fcard f3"><div class="fl">Exam</div><div class="ft">CBSE Class 12 dates</div><div class="fd">Announced 14 min ago</div><div class="fbar"><i style="width:88%;background:#2E6B4E"></i></div></div>
+      <div class="fcard f4"><div class="fl">Property</div><div class="ft">Tower B, RERA</div><div class="fd">Approval pending</div><div class="fbar"><i style="width:45%;background:#B87A00"></i></div></div>
+      <div class="fcard f5"><div class="fl">College</div><div class="ft">Mood Indigo dates</div><div class="fd">Watch the site</div><div class="fbar"><i style="width:24%"></i></div></div>
+    </div>
+  </div>
+
+  <div class="marquee">
+    <div class="track" id="track">
+      <span class="mi"><span class="d"></span> <b>Price drop</b> · iPhone 15 · below ₹58,000</span>
+      <span class="mi"><span class="d"></span> <b>New job</b> · Zerodha · product designer</span>
+      <span class="mi"><span class="d"></span> <b>Exam date</b> · NEET 2027 · notification out</span>
+      <span class="mi"><span class="d"></span> <b>RERA</b> · Prestige Lakeside · tower C</span>
+      <span class="mi"><span class="d"></span> <b>Scheme</b> · PMAY · last date extended</span>
+      <span class="mi"><span class="d"></span> <b>Fest</b> · BITS Pilani · Oasis dates</span>
+      <span class="mi"><span class="d"></span> <b>Result</b> · ICAI CA Inter · declared</span>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="how">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="kicker">How it works</p>
+      <h2 class="serif">Three steps, then <em>you forget about it.</em></h2>
+      <p>No dashboard to check, no feed to scroll. The whole point is that it tells you, so you don't have to look.</p>
+    </div>
+    <div class="steps">
+      <div class="step rv"><div class="n">01</div><h3>Say what you're waiting for</h3><p>In your own words. "Tell me when this flat gets RERA approval" is enough — no forms, no dropdowns.</p></div>
+      <div class="step rv"><div class="n">02</div><h3>We check, quietly</h3><p>Every few hours we open the page, read it, and compare it to what it said last time. Nothing is sent unless something really changed.</p></div>
+      <div class="step rv"><div class="n">03</div><h3>You get one line</h3><p>"The price fell from ₹61,000 to ₹54,300." Not a link. Not a feed. One sentence that tells you what to do.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="shelf" style="background:var(--paper2);border-top:1px solid var(--line);border-bottom:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="kicker">The shelf</p>
+      <h2 class="serif">Pick one. Or say it <em>your own way.</em></h2>
+      <p>These are ready-made. Tap any of them and it drops into the box above, already filled in.</p>
+    </div>
+    <div class="shelf" id="shelfGrid"></div>
+  </div>
+</section>
+
+<section class="sec" id="demo">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="kicker">Try it</p>
+      <h2 class="serif">Set one now. <em>Watch it ring.</em></h2>
+      <p>In demo mode everything stays in this browser. Connect your phone and the alarms run on the server, with WhatsApp delivery.</p>
+    </div>
+
+    <div class="demo">
+      <div class="panel rv">
+        <h3>Your alarms</h3>
+        <p class="ph">Each one is checked in the background.</p>
+        <div class="connbar" id="connbar">
+          <span class="cstate" id="connstate"><i class="cdemo"></i> Demo mode — alarms stay in this browser</span>
+          <button class="chip" id="btnConnect" type="button">Connect my phone</button>
+        </div>
+        <div class="errbox" id="alarmErr" hidden></div>
+        <ul class="list" id="alarmList">
+          <li class="empty" id="emptyState">Nothing yet. Type something above, or tap one from the shelf.</li>
+        </ul>
+        <button class="pill ghost" id="ringBtn" style="margin-top:18px;width:100%;justify-content:center" disabled>Ring one to see the message</button>
+      </div>
+
+      <div class="panel rv" style="background:transparent;border:none;padding:0">
+        <div class="phone">
+          <div class="screen">
+            <div class="wa-top"><div class="av">W</div><div><div style="font-weight:600">Wedge</div><div style="opacity:.7;font-size:10.5px">online</div></div></div>
+            <div id="chat">
+              <div class="bubble" style="background:#DCF8C6;border-radius:10px 10px 2px 10px;margin-left:auto;max-width:80%">
+                <div class="bm">tell me when the price drops below ₹55,000</div>
+                <span class="time">09:41</span>
+              </div>
+              <div class="bubble" style="margin-top:8px">
+                <div class="bt">Alarm set ✓</div>
+                <div class="bm">Watching this link every 6 hours. I'll message you the moment it goes under ₹55,000.</div>
+                <span class="time">09:41</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p style="text-align:center;font-size:12.5px;color:var(--mute);margin:14px 0 0">WhatsApp delivery is ₹100 a year. Email is free forever.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec" id="pricing" style="background:var(--paper2);border-top:1px solid var(--line)">
+  <div class="wrap">
+    <div class="sec-head rv">
+      <p class="kicker">Pricing</p>
+      <h2 class="serif">Free on the web. <em>₹100 a year</em> on WhatsApp.</h2>
+      <p>We charge for the channel because that's the only part that costs us money — every WhatsApp message is 11 paise. The watching itself is free.</p>
+    </div>
+    <div class="prices">
+      <div class="price rv">
+        <div class="pl">Free forever</div>
+        <div class="amt">₹0</div>
+        <div class="pn">no card, no trial, no catch</div>
+        <ul>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2E6B4E" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 3 alarms at a time</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2E6B4E" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Email and Telegram, unlimited</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2E6B4E" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> One weekly digest of what changed</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2E6B4E" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Every category, nothing locked</li>
+        </ul>
+        <a class="pill ghost" href="#demo">Start free</a>
+      </div>
+      <div class="price hot rv">
+        <div class="pl">WhatsApp</div>
+        <div class="amt">₹100 <small>/ year</small></div>
+        <div class="pn">the moment it happens, where you'll see it</div>
+        <ul>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DE3B1C" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Instant alerts, not a weekly digest</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DE3B1C" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> 10 alarms at a time</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DE3B1C" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Up to 100 alerts a month</li>
+          <li><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#DE3B1C" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg> Reply in chat to change anything</li>
+        </ul>
+        <a class="pill" id="btnPay" href="#demo">Get it on WhatsApp</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <div style="display:flex;align-items:center;gap:9px"><span class="dot"></span> Wedge</div>
+    <div class="footlinks">
+      <a href="/terms">Terms</a><a href="/privacy">Privacy</a><a href="/refund">Refunds</a>
+      <span id="stamp" style="opacity:.6">v1.0 · 26 Nov 2026</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const $$ = (s) => Array.from(document.querySelectorAll(s));
+const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------- backend ---------------- */
+const API = window.ALARM_API || (location.protocol.startsWith("http") ? location.origin : "http://localhost:8787");
+const state = { online: false, key: localStorage.getItem("wedge_key") || null, plan: "free", maxAlarms: 3 };
+
+async function api(path, opts) {
+  const res = await fetch(API + path, {
+    headers: { "content-type": "application/json" },
+    ...opts
+  });
+  const body = await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, body };
+}
+
+async function boot() {
+  try {
+    const h = await api("/api/health");
+    state.online = h.ok && h.body.ok === true;
+  } catch { state.online = false; }
+  if (state.online && state.key) {
+    try {
+      const me = await api("/api/me?key=" + encodeURIComponent(state.key));
+      if (me.ok) { state.plan = me.body.plan; state.maxAlarms = me.body.maxAlarms; }
+      else { state.key = null; localStorage.removeItem("wedge_key"); }
+    } catch {}
+  }
+  paintConn();
+}
+
+function paintConn() {
+  const el = $("#connstate"), btn = $("#btnConnect");
+  if (!el) return;
+  if (!state.online) {
+    el.innerHTML = '<i></i> Demo mode — alarms stay in this browser';
+    btn.textContent = "Connect my phone";
+    btn.hidden = false;
+  } else if (!state.key) {
+    el.innerHTML = '<i class="live"></i> Server connected — not signed in yet';
+    btn.textContent = "Connect my phone";
+    btn.hidden = false;
+  } else {
+    const plan = state.plan === "whatsapp" ? "WhatsApp plan" : "Free plan";
+    el.innerHTML = '<i class="live"></i> Connected · ' + plan;
+    btn.textContent = state.plan === "whatsapp" ? "Active" : "Upgrade";
+    btn.hidden = false;
+  }
+}
+
+function bindConnect() {
+  const btn = $("#btnConnect");
+  if (btn) btn.addEventListener("click", onConnectClick);
+}
+
+function onConnectClick() {
+  const bar = $("#connbar");
+  if (!state.online) {
+    bar.innerHTML = '<span class="cstate" style="color:var(--amber)">No server running. Start it with <b style="margin-left:4px">node server/server.js</b></span>';
+    return;
+  }
+  if (state.key) { document.querySelector("#pricing").scrollIntoView({ behavior: "smooth" }); return; }
+  bar.innerHTML = '<span class="cstate">Your number</span><span class="conninput"><input id="phoneIn" placeholder="+91 98765 43210" inputmode="tel"><button id="phoneGo">Connect</button></span>';
+  $("#phoneIn").focus();
+  $("#phoneGo").addEventListener("click", async () => {
+    const phone = $("#phoneIn").value.replace(/[^\d]/g, "");
+    if (phone.length < 10) { $("#phoneIn").style.borderColor = "var(--signal)"; return; }
+    const r = await api("/api/session", { method: "POST", body: JSON.stringify({ phone }) });
+    if (r.ok) {
+      state.key = r.body.key;
+      state.plan = r.body.user.plan === "WhatsApp" ? "whatsapp" : "free";
+      state.maxAlarms = r.body.limits.maxAlarms;
+      localStorage.setItem("wedge_key", state.key);
+      $("#connbar").innerHTML = '<span class="cstate" id="connstate"></span><button class="chip" id="btnConnect" type="button"></button>';
+      bindConnect();
+      paintConn();
+      $("#alarmErr").hidden = true;
+    }
+  });
+}
+
+bindConnect();
+
+/* ---------------- header shadow ---------------- */
+window.addEventListener("scroll", () => {
+  $("#hdr").classList.toggle("scrolled", window.scrollY > 8);
+}, { passive: true });
+
+/* ---------------- the shelf ---------------- */
+const SHELF = [
+  { k: "Price drop", d: "Paste a product link, name your price.", p: "tell me when this product drops below ₹",
+    icon: '<path d="M3 17l6-6 4 4 7-7"/><path d="M14 8h6v6"/>' },
+  { k: "New job", d: "A company and a role you'd actually take.", p: "new jobs at ",
+    icon: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>' },
+  { k: "Exam date", d: "Boards, entrance tests, results.", p: "when the exam date is announced for ",
+    icon: '<rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/>' },
+  { k: "College fest", d: "Dates, passes, artist line-ups.", p: "when the college fest dates are out for ",
+    icon: '<path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8z"/>' },
+  { k: "RERA approval", d: "The tower you're paying for, not the project.", p: "when RERA approval comes for ",
+    icon: '<path d="M3 21h18"/><path d="M6 21V8l6-4 6 4v13"/><path d="M10 21v-5h4v5"/>' },
+  { k: "Scheme deadline", d: "Government windows that close quietly.", p: "when the last date is announced for ",
+    icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>' },
+  { k: "New listing", d: "A search you keep refreshing by hand.", p: "new listings for ",
+    icon: '<path d="M3 6h18M3 12h18M3 18h12"/>' },
+  { k: "Any page", d: "Any link, any word or number on it.", p: "tell me when this page changes: ",
+    icon: '<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>' }
+];
+
+const grid = $("#shelfGrid");
+grid.innerHTML = SHELF.map((s, i) => `
+  <div class="alarm rv" data-i="${i}" style="transition-delay:${i * 40}ms">
+    <div class="ico"><svg viewBox="0 0 24 24">${s.icon}</svg></div>
+    <h4>${s.k}</h4>
+    <p>${s.d}</p>
+  </div>`).join("");
+
+grid.addEventListener("click", (e) => {
+  const card = e.target.closest(".alarm");
+  if (!card) return;
+  const s = SHELF[+card.dataset.i];
+  $("#ask").value = s.p;
+  $("#ask").focus();
+  $("#ask").setSelectionRange(s.p.length, s.p.length);
+  parse();
+  document.getElementById("top").scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => $("#ask").focus(), 420);
+});
+
+grid.addEventListener("mousemove", (e) => {
+  const card = e.target.closest(".alarm");
+  if (!card) return;
+  const r = card.getBoundingClientRect();
+  card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+  card.style.setProperty("--my", (e.clientY - r.top) + "px");
+});
+
+/* ---------------- parsing ---------------- */
+function parseAlarm(text) {
+  const t = text.trim();
+  if (t.length < 4) return null;
+  const lower = t.toLowerCase();
+
+  let type = "page", what = t, when = "anything on the page changes", freq = "every 6 hours";
+
+  const price = t.match(/(?:below|under|less than|cheaper than|at)\s*(?:₹|rs\.?|inr)?\s*([\d,]+)/i);
+  const url = t.match(/https?:\/\/\S+/i);
+
+  if (/price|₹|rs\.?|cheap|cost|drop|deal|discount/.test(lower)) {
+    type = "price";
+    when = price ? `the price goes below ₹${price[1]}` : "the price changes";
+    what = url ? url[0] : "the product link you gave";
+  } else if (/job|hiring|vacanc|opening|role|position/.test(lower)) {
+    type = "job";
+    what = t.replace(/^.*?(at|in|for)\s+/i, "") || "the company you named";
+    when = "a matching role is posted";
+    freq = "every 3 hours";
+  } else if (/exam|result|admit|board|neet|jee|cat\b/.test(lower)) {
+    type = "exam";
+    when = "the date or result is announced";
+  } else if (/fest|college|admission|campus/.test(lower)) {
+    type = "college";
+    when = "dates are published";
+  } else if (/rera|possession|flat|tower|project|approval/.test(lower)) {
+    type = "property";
+    when = "the status changes";
+    freq = "every 12 hours";
+  } else if (/scheme|deadline|last date|apply|subsidy/.test(lower)) {
+    type = "scheme";
+    when = "a date is announced or extended";
+  } else if (url) {
+    type = "page";
+    what = url[0];
+  }
+
+  const fm = t.match(/every\s+(\d+)\s*(minute|hour|day)/i);
+  if (fm) freq = `every ${fm[1]} ${fm[2]}${+fm[1] > 1 ? "s" : ""}`;
+
+  const LABEL = { price: "Price", job: "Job", exam: "Exam", college: "College", property: "Property", scheme: "Scheme", page: "Page" };
+  return { type, label: LABEL[type], what: what.replace(/\s+/g, " ").slice(0, 90), when, freq };
+}
+
+/* ---------------- preview ---------------- */
+const pv = $("#preview");
+function parse() {
+  const a = parseAlarm($("#ask").value);
+  if (!a) {
+    pv.classList.remove("live");
+    $("#pvstate").textContent = "Waiting for you to say something";
+    $("#pv-what").textContent = "—";
+    $("#pv-freq").textContent = "—";
+    $("#pv-when").textContent = "—";
+    $("#pv-where").textContent = "—";
+    return null;
+  }
+  pv.classList.add("live");
+  $("#pvstate").textContent = "Here's the alarm I'll set";
+  $("#pv-what").textContent = a.what;
+  $("#pv-freq").textContent = a.freq;
+  $("#pv-when").textContent = a.when;
+  $("#pv-where").innerHTML = 'WhatsApp <span class="tag">₹100/yr</span> or email · free';
+  return a;
+}
+let deb;
+$("#ask").addEventListener("input", () => { clearTimeout(deb); deb = setTimeout(parse, 140); });
+
+$$(".chip").forEach(c => c.addEventListener("click", () => {
+  $("#ask").value = c.textContent;
+  parse();
+  $("#ask").focus();
+}));
+
+/* ---------------- set alarm ---------------- */
+const list = $("#alarmList");
+const alarms = [];
+let tickTimer = null;
+
+$("#builder").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const a = parse();
+  if (!a) { $("#ask").focus(); return; }
+  const raw = $("#ask").value.trim();
+  const urlMatch = raw.match(/https?:\/\/\S+/i);
+
+  if (state.online && state.key) {
+    const r = await api("/api/alarms", {
+      method: "POST",
+      body: JSON.stringify({ key: state.key, text: raw, url: urlMatch ? urlMatch[0] : null })
+    });
+    if (!r.ok) {
+      const box = $("#alarmErr");
+      box.hidden = false;
+      box.textContent = r.body.error || "Could not set that alarm.";
+      if (r.body.upgrade) {
+        box.innerHTML = esc(box.textContent) + ' <a href="#pricing" style="color:inherit;text-decoration:underline">Upgrade</a>';
+      }
+      return;
+    }
+    $("#alarmErr").hidden = true;
+    const srv = r.body.alarm;
+    alarms.push({ ...a, id: srv.id, at: Date.now(), server: true });
+    render();
+  } else {
+    alarms.push({ ...a, id: Date.now() + Math.random(), at: Date.now() });
+    render();
+    $("#alarmErr").hidden = true;
+  }
+  $("#ask").value = "";
+  parse();
+  $("#ringBtn").disabled = false;
+});
+
+function ago(ms) {
+  const s = Math.floor(ms / 1000);
+  if (s < 60) return s + "s ago";
+  const m = Math.floor(s / 60);
+  return m + "m ago";
+}
+
+function render() {
+  if (!alarms.length) {
+    list.innerHTML = '<li class="empty" id="emptyState">Nothing yet. Type something above, or tap one from the shelf.</li>';
+    return;
+  }
+  list.innerHTML = alarms.map((a, i) => `
+    <li class="row" style="animation-delay:${i * 40}ms">
+      <span class="live-dot"></span>
+      <div style="flex:1;min-width:0">
+        <div class="rt">${esc(a.what)}</div>
+        <div class="rm">${esc(a.label)} · ${esc(a.freq)} · rings when ${esc(a.when)} · checked <span data-since="${a.at}">just now</span></div>
+      </div>
+    </li>`).join("");
+}
+
+function esc(s) { return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+if (!reduce) {
+  tickTimer = setInterval(() => {
+    $$("[data-since]").forEach(el => { el.textContent = ago(Date.now() - (+el.dataset.since)); });
+  }, 1000);
+}
+
+/* ---------------- ring ---------------- */
+const CHAT = [
+  { t: "Alarm set ✓", m: "Watching this every 6 hours. I'll message you the moment it changes." },
+  { t: "Price dropped", m: "It fell from ₹61,000 to ₹54,300 — the lowest in four months. That's below your ₹55,000 line." },
+  { t: "New job posted", m: "Razorpay listed a Backend Engineer role in Bengaluru, 3+ years. Posted 14 minutes ago." },
+  { t: "Date announced", m: "The dates are out: 12–14 March. The page changed 22 minutes ago." },
+  { t: "Status changed", m: "The tower's registration moved from 'pending' to 'approved'. Here's the certificate number." }
+];
+
+$("#ringBtn").addEventListener("click", () => {
+  const a = alarms[alarms.length - 1];
+  if (!a) return;
+  const chat = $("#chat");
+  const pick = a.type === "price" ? CHAT[1] : a.type === "job" ? CHAT[2] : a.type === "property" ? CHAT[4] : CHAT[3];
+  const now = new Date();
+  const time = now.getHours().toString().padStart(2, "0") + ":" + now.getMinutes().toString().padStart(2, "0");
+
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.style.marginTop = "8px";
+  b.innerHTML = `<div class="bt">${esc(pick.t)}</div><div class="bm">${esc(pick.m)}</div><span class="time">${time}</span>`;
+  chat.appendChild(b);
+  chat.scrollTop = chat.scrollHeight;
+
+  // a little shake on the phone, the way a phone actually behaves
+  if (!reduce) {
+    const ph = document.querySelector(".phone");
+    ph.animate([
+      { transform: "translateX(0)" }, { transform: "translateX(-4px)" },
+      { transform: "translateX(4px)" }, { transform: "translateX(0)" }
+    ], { duration: 260, easing: "ease-in-out" });
+  }
+});
+
+/* ---------------- fan motion ---------------- */
+const fan = $("#fan");
+if (fan && !reduce) {
+  let tx = 0, ty = 0, cx = 0, cy = 0;
+  fan.addEventListener("mousemove", (e) => {
+    const r = fan.getBoundingClientRect();
+    tx = ((e.clientX - r.left) / r.width - .5) * 26;
+    ty = ((e.clientY - r.top) / r.height - .5) * 14;
+  });
+  fan.addEventListener("mouseleave", () => { tx = 0; ty = 0; });
+
+  const cards = $$(".fcard");
+  let t0 = 0;
+  (function loop(t) {
+    t0 = t;
+    cx += (tx - cx) * 0.06;
+    cy += (ty - cy) * 0.06;
+    const bob = Math.sin(t / 1400) * 5;
+    cards.forEach((c, i) => {
+      const depth = (i - 2) * 0.22;
+      c.style.setProperty("--px", (cx * (1 + depth)) + "px");
+      c.style.setProperty("--py", (cy * (1 + depth) + Math.sin(t / 1600 + i) * 4 + bob * 0.3) + "px");
+      c.style.translate = `${cx * (1 + depth)}px ${cy * (1 + depth) + Math.sin(t / 1600 + i) * 4}px`;
+    });
+    requestAnimationFrame(loop);
+  })(0);
+
+  cards.forEach(c => {
+    c.addEventListener("mouseenter", () => c.classList.add("hov"));
+    c.addEventListener("mouseleave", () => c.classList.remove("hov"));
+  });
+}
+
+/* ---------------- reveal ---------------- */
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+}, { threshold: 0.14, rootMargin: "0px 0px -40px 0px" });
+$$(".rv").forEach(el => io.observe(el));
+
+/* ---------------- marquee duplicate ---------------- */
+const track = $("#track");
+track.innerHTML += track.innerHTML;
+
+/* ---------------- payment ---------------- */
+function loadCheckout() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) return resolve();
+    const s = document.createElement("script");
+    s.src = "https://checkout.razorpay.com/v1/checkout.js";
+    s.onload = resolve;
+    s.onerror = () => reject(new Error("could not load Razorpay checkout"));
+    document.head.appendChild(s);
+  });
+}
+
+$("#btnPay").addEventListener("click", async (e) => {
+  e.preventDefault();
+  if (!state.online || !state.key) {
+    $("#connbar").scrollIntoView({ behavior: "smooth", block: "center" });
+    $("#connbar").animate([{ background: "#FBE8E2" }, { background: "#FCFBF6" }], { duration: 900 });
+    return;
+  }
+  const order = await api("/api/billing/order", { method: "POST", body: JSON.stringify({ key: state.key }) });
+  if (!order.ok) return;
+
+  if (order.body.dev || !order.body.keyId) {
+    // no live keys: finish through the server's dev branch so the flow is visible
+    const v = await api("/api/billing/verify", {
+      method: "POST",
+      body: JSON.stringify({ key: state.key, orderId: order.body.orderId, paymentId: "dev", dev: true })
+    });
+    if (v.ok) { state.plan = "whatsapp"; state.maxAlarms = 10; paintConn(); flashPaid(); }
+    return;
+  }
+
+  try {
+    await loadCheckout();
+    const rz = new window.Razorpay({
+      key: order.body.keyId,
+      amount: order.body.amount,
+      currency: order.body.currency,
+      name: "Wedge",
+      description: "WhatsApp alerts, one year",
+      order_id: order.body.orderId,
+      theme: { color: "#DE3B1C" },
+      handler: async (resp) => {
+        const v = await api("/api/billing/verify", {
+          method: "POST",
+          body: JSON.stringify({
+            key: state.key,
+            orderId: resp.razorpay_order_id,
+            paymentId: resp.razorpay_payment_id,
+            signature: resp.razorpay_signature
+          })
+        });
+        if (v.ok) { state.plan = "whatsapp"; state.maxAlarms = 10; paintConn(); flashPaid(); }
+      }
+    });
+    rz.open();
+  } catch (err) {
+    alert("Could not open the payment window: " + err.message);
+  }
+});
+
+function flashPaid() {
+  const err = $("#alarmErr");
+  if (err) err.hidden = true;
+  $("#ringBtn").disabled = alarms.length === 0;
+  const c = $("#connbar");
+  if (!c) return;
+  c.style.background = "#E7F1EA";
+  c.style.borderColor = "#CFE4D8";
+  c.animate([{ transform: "scale(.98)" }, { transform: "scale(1)" }], { duration: 320 });
+}
+
+/* ---------------- stamp ---------------- */
+$("#stamp").textContent = "v1.0 · 25 Nov 2026";
+boot();
+</script>
+</body>
+</html>

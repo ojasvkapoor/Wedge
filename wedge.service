@@ -1,0 +1,17 @@
+[Unit]
+Description=Wedge
+After=network.target
+
+[Service]
+Type=simple
+User=wedge
+WorkingDirectory=/opt/wedge/server
+EnvironmentFile=/opt/wedge/.env
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

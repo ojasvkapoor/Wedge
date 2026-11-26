@@ -1,0 +1,10 @@
+# the database holds real accounts and phone numbers
+data/
+*.log
+
+# secrets
+.env
+.env.local
+
+node_modules/
+.DS_Store

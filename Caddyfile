@@ -1,0 +1,8 @@
+# Caddy gets you HTTPS for free. Replace the domain, then: caddy reload
+wedge.example.com {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8787
+	log {
+		output file /var/log/caddy/wedge.log
+	}
+}
